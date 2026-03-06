@@ -3,7 +3,6 @@ import { Search, TrendingUp, Users, Map as MapIcon, ChevronRight, Info, RefreshC
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import initialData from './data.json';
 
 // --- CONFIGURATION ---
 const PARTY_SHEET_ID = '118Vp0vkT-HJcasjASMhm6oLmVizf2xWGjxhTHT2adyI';
@@ -63,7 +62,7 @@ const translations = {
     totalVotes: 'कुल मत',
     noResults: 'कुनै नतिजा भेटिएन',
     tryAdjusting: 'आफ्नो खोज वा फिल्टरहरू समायोजन गर्ने प्रयास गर्नुहोस्',
-    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग',
+    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग ',
     results: 'नतिजाहरू',
     voteDistribution: 'मत वितरण',
     voteShare: 'मत हिस्सा',
@@ -216,11 +215,12 @@ const ParliamentChart = ({ data, totalSeats = 165, language }: { data: any[], to
 export default function App() {
   const [language, setLanguage] = useState<Language>('en');
   const [searchTerm, setSearchTerm] = useState('');
-  const [battlesData, setBattlesData] = useState<Candidate[]>(initialData);
-  const [partyData, setPartyData] = useState<Candidate[]>(initialData);
+  const [battlesData, setBattlesData] = useState<Candidate[]>([]);
+  const [partyData, setPartyData] = useState<Candidate[]>([]);
   const [samanupathikData, setSamanupathikData] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [selectedConstituency, setSelectedConstituency] = useState<ConstituencyResult | null>(null);
   const [selectedParty, setSelectedParty] = useState<any | null>(null);
 
@@ -303,6 +303,7 @@ export default function App() {
       if (sDataRaw.length > 0) setSamanupathikData(sDataRaw);
       
       setLastUpdated(new Date());
+      setHasLoaded(true);
     } catch (error) {
       console.error('Failed to sync with Google Sheets:', error);
     } finally {
@@ -499,6 +500,20 @@ export default function App() {
              province.toLowerCase().includes(search);
     });
   }, [processedBattlesData, searchTerm]);
+
+  if (!hasLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          {language === 'ne' ? 'डाटा लोड हुँदैछ...' : 'Loading Election Data...'}
+        </h2>
+        <p className="text-slate-500 animate-pulse">
+          {language === 'ne' ? 'कृपया एकछिन पर्खनुहोस्' : 'Connecting to real-time results...'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans pb-20">
