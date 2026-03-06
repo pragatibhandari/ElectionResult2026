@@ -1,0 +1,79 @@
+[
+  {
+    "province": "Bagmati",
+    "district": "Kathmandu",
+    "constituency": 1,
+    "candidateName": "Prakash Man Singh",
+    "partyName": "Nepali Congress",
+    "votes": 12345,
+    "candidatePicture": "https://picsum.photos/seed/prakash/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Nepali_Congress_Flag.svg/1200px-Nepali_Congress_Flag.svg.png",
+    "partyColor": "#004a99"
+  },
+  {
+    "province": "Bagmati",
+    "district": "Kathmandu",
+    "constituency": 1,
+    "candidateName": "Ravindra Mishra",
+    "partyName": "Rastriya Prajatantra Party",
+    "votes": 11800,
+    "candidatePicture": "https://picsum.photos/seed/ravindra/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Flag_of_the_Rastriya_Prajatantra_Party.svg/1200px-Flag_of_the_Rastriya_Prajatantra_Party.svg.png",
+    "partyColor": "#ffcc00"
+  },
+  {
+    "province": "Bagmati",
+    "district": "Kathmandu",
+    "constituency": 2,
+    "candidateName": "Sobita Gautam",
+    "partyName": "Rastriya Swatantra Party",
+    "votes": 15200,
+    "candidatePicture": "https://picsum.photos/seed/sobita/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Rastriya_Swatantra_Party_Logo.svg/1200px-Rastriya_Swatantra_Party_Logo.svg.png",
+    "partyColor": "#00adef"
+  },
+  {
+    "province": "Koshi",
+    "district": "Jhapa",
+    "constituency": 5,
+    "candidateName": "KP Sharma Oli",
+    "partyName": "CPN (UML)",
+    "votes": 25000,
+    "candidatePicture": "https://picsum.photos/seed/kp/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/CPN-UML_flag.svg/1200px-CPN-UML_flag.svg.png",
+    "partyColor": "#ed1c24"
+  },
+  {
+    "province": "Gandaki",
+    "district": "Gorkha",
+    "constituency": 2,
+    "candidateName": "Pushpa Kamal Dahal",
+    "partyName": "CPN (Maoist Centre)",
+    "votes": 18500,
+    "candidatePicture": "https://picsum.photos/seed/prachanda/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Hammer_and_sickle.svg/1200px-Hammer_and_sickle.svg.png",
+    "partyColor": "#ff0000"
+  },
+  {
+    "province": "Lumbini",
+    "district": "Rupandehi",
+    "constituency": 2,
+    "candidateName": "Bishnu Paudel",
+    "partyName": "CPN (UML)",
+    "votes": 14000,
+    "candidatePicture": "https://picsum.photos/seed/bishnu/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/CPN-UML_flag.svg/1200px-CPN-UML_flag.svg.png",
+    "partyColor": "#ed1c24"
+  },
+  {
+    "province": "Madhesh",
+    "district": "Saptari",
+    "constituency": 2,
+    "candidateName": "CK Raut",
+    "partyName": "Janamat Party",
+    "votes": 22000,
+    "candidatePicture": "https://picsum.photos/seed/ckraut/200/200",
+    "partyIcon": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Janamat_Party_Flag.svg/1200px-Janamat_Party_Flag.svg.png",
+    "partyColor": "#008000"
+  }
+]

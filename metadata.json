@@ -1,0 +1,5 @@
+{
+  "name": "Nepal Election Dashboard",
+  "description": "A dynamic, Excel-driven election results tracker for Nepal with parliament seat maps and real-time candidate filtering.",
+  "requestFramePermissions": []
+}
