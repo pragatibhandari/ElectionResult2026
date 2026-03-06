@@ -8,7 +8,7 @@ import initialData from './data.json';
 // --- CONFIGURATION ---
 const PARTY_SHEET_ID = '118Vp0vkT-HJcasjASMhm6oLmVizf2xWGjxhTHT2adyI';
 const BATTLES_SHEET_ID = '1z2mjEB-ckxZUIgaT4CBubGbhQUb6X4NFtlWmNqWWB4E';
-const SAMANUPATHIK_SHEET_ID = '1LqWpNm5c1LJhUC866bdjie1WftzwDrHZiBXL4hq5uwk';
+const SAMANUPATHIK_SHEET_ID = '118Vp0vkT-HJcasjASMhm6oLmVizf2xWGjxhTHT2adyI';
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
 type Language = 'en' | 'ne';
@@ -32,10 +32,7 @@ const translations = {
     totalVotes: 'Total Votes',
     noResults: 'No results found',
     tryAdjusting: 'Try adjusting your search or filters',
-    dataSource: 'Data source: Election Commission of Nepal (Mock Data for Demo)',
-    about: 'About',
-    methodology: 'Methodology',
-    contact: 'Contact',
+    dataSource: 'Data source: Election Commission of Nepal',
     results: 'results',
     voteDistribution: 'Vote Distribution',
     voteShare: 'Vote Share',
@@ -66,10 +63,7 @@ const translations = {
     totalVotes: 'कुल मत',
     noResults: 'कुनै नतिजा भेटिएन',
     tryAdjusting: 'आफ्नो खोज वा फिल्टरहरू समायोजन गर्ने प्रयास गर्नुहोस्',
-    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग (डेमोका लागि नक्कली डाटा)',
-    about: 'बारेमा',
-    methodology: 'विधि',
-    contact: 'सम्पर्क',
+    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग',
     results: 'नतिजाहरू',
     voteDistribution: 'मत वितरण',
     voteShare: 'मत हिस्सा',
@@ -254,7 +248,15 @@ export default function App() {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         if (!sheet) return [] as any[];
         
-        return XLSX.utils.sheet_to_json(sheet);
+        const rawData = XLSX.utils.sheet_to_json(sheet);
+        // Trim keys to handle potential whitespace in headers
+        return rawData.map((row: any) => {
+          const trimmedRow: any = {};
+          Object.keys(row).forEach(key => {
+            trimmedRow[key.trim()] = row[key];
+          });
+          return trimmedRow;
+        });
       };
 
       const [pDataRaw, bDataRaw, sDataRaw] = await Promise.all([
@@ -383,13 +385,21 @@ export default function App() {
     
     // Process Samanupathik Data first
     samanupathikData.forEach(item => {
-      const party = item.partyName || item.party || item.Party || item['Party Name'] || 'Unknown';
-      const votes = parseInt(item.votes || item.samanupathik || item.Votes || item.Samanupathik || item['Samanupathik Votes'] || 0);
+      const parseVotes = (val: any) => {
+        if (val === undefined || val === null) return 0;
+        if (typeof val === 'number') return val;
+        const cleaned = String(val).replace(/,/g, '');
+        const parsed = parseInt(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+
+      const party = item.partyName || item.party || item.Party || item['Party Name'] || item.Party_Name || 'Unknown';
+      const votes = parseVotes(item.Pr_votes || item.Pr_Votes || item.votes || item.samanupathik || item.Votes || item.Samanupathik || item['Samanupathik Votes']);
       
       if (!totals[party]) {
         totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: votes, prSeats: 0 };
       } else {
-        totals[party].samanupathik = votes;
+        totals[party].samanupathik += votes;
       }
     });
 
