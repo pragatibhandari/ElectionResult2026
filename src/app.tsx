@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, TrendingUp, Users, Map as MapIcon, ChevronRight, Info, RefreshCw, LayoutDashboard, X, BarChart3, PieChart as PieChartIcon, ArrowLeft } from 'lucide-react';
+import { Search, TrendingUp, Users, Map as MapIcon, ChevronRight, Info, RefreshCw, LayoutDashboard, X, BarChart3, PieChart as PieChartIcon, ArrowLeft, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -31,7 +31,10 @@ const translations = {
     totalVotes: 'Total Votes',
     noResults: 'No results found',
     tryAdjusting: 'Try adjusting your search or filters',
-    dataSource: 'Data source: Election Commission of Nepal',
+    dataSource: 'Data source: Election Commission of Nepal (Mock Data for Demo)',
+    about: 'About',
+    methodology: 'Methodology',
+    contact: 'Contact',
     results: 'results',
     voteDistribution: 'Vote Distribution',
     voteShare: 'Vote Share',
@@ -62,7 +65,10 @@ const translations = {
     totalVotes: 'कुल मत',
     noResults: 'कुनै नतिजा भेटिएन',
     tryAdjusting: 'आफ्नो खोज वा फिल्टरहरू समायोजन गर्ने प्रयास गर्नुहोस्',
-    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग ',
+    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग (डेमोका लागि नक्कली डाटा)',
+    about: 'बारेमा',
+    methodology: 'विधि',
+    contact: 'सम्पर्क',
     results: 'नतिजाहरू',
     voteDistribution: 'मत वितरण',
     voteShare: 'मत हिस्सा',
@@ -87,7 +93,8 @@ interface Candidate {
   candidatePicture: string;
   partyIcon: string;
   partyColor: string;
-  status?: 'Leading' | 'Won'; // New field for status
+  status?: 'Leading' | 'Won';
+  win?: string; // Raw 'win' column from sheet
 }
 
 interface ConstituencyResult {
@@ -265,19 +272,22 @@ export default function App() {
         fetchSheet(SAMANUPATHIK_SHEET_ID)
       ]);
 
-      const mapCandidate = (item: any) => ({
-        ...item,
-        constituency: parseInt(item.constituency) || 0,
-        votes: parseInt(item.votes) || 0,
-        province: String(item.province || ''),
-        district: String(item.district || ''),
-        candidateName: String(item.candidateName || ''),
-        partyName: String(item.partyName || ''),
-        candidatePicture: String(item.candidatePicture || ''),
-        partyIcon: String(item.partyIcon || ''),
-        partyColor: String(item.partyColor || ''),
-        status: item.status ? String(item.status) : undefined
-      });
+      const mapCandidate = (item: any) => {
+        const isWin = String(item.win || '').toLowerCase() === 'yes';
+        return {
+          ...item,
+          constituency: parseInt(item.constituency) || 0,
+          votes: parseInt(item.votes) || 0,
+          province: String(item.province || ''),
+          district: String(item.district || ''),
+          candidateName: String(item.candidateName || ''),
+          partyName: String(item.partyName || ''),
+          candidatePicture: String(item.candidatePicture || ''),
+          partyIcon: String(item.partyIcon || ''),
+          partyColor: String(item.partyColor || ''),
+          status: isWin ? 'Won' : (item.status ? String(item.status) : undefined)
+        };
+      };
 
       const pDataMapped = pDataRaw.map(mapCandidate);
       const bDataMapped = bDataRaw.map(mapCandidate);
@@ -756,7 +766,10 @@ export default function App() {
                     {/* Main Content: Top 4 Candidates */}
                     <div className="p-4 space-y-3">
                       {res.topCandidates.map((candidate, idx) => (
-                        <div key={idx} className={`flex items-center gap-3 ${idx === 0 ? 'pb-3 border-b border-slate-50' : ''}`}>
+                        <div 
+                          key={idx} 
+                          className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${idx === 0 ? 'pb-3 border-b border-slate-50' : ''} ${candidate.status?.toLowerCase() === 'won' ? 'bg-green-50 border border-green-100' : ''}`}
+                        >
                           <div className="relative shrink-0">
                             {candidate.candidatePicture ? (
                               <img 
@@ -784,8 +797,11 @@ export default function App() {
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-start gap-2">
                               <div>
-                                <h3 className={`${idx === 0 ? 'font-bold text-sm' : 'font-semibold text-xs'} text-slate-900 truncate leading-tight`}>
+                                <h3 className={`${idx === 0 ? 'font-bold text-sm' : 'font-semibold text-xs'} text-slate-900 truncate leading-tight flex items-center gap-1.5`}>
                                   {candidate.candidateName}
+                                  {candidate.status?.toLowerCase() === 'won' && (
+                                    <Trophy className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                  )}
                                 </h3>
                                 <p className="text-[10px] font-medium text-slate-400 truncate">{candidate.partyName}</p>
                               </div>
