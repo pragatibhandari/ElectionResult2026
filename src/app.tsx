@@ -57,7 +57,7 @@ const translations = {
     highestLead: 'Highest Lead',
     partyCandidates: 'Party Candidates',
     allWins: 'All Wins',
-    winDifference: 'Win Difference',
+    winDifference: 'Win Diff',
     higherVotes: 'Higher Votes',
     winningCandidates: 'Win Declared',
     twoThirdsMajority: '2/3 Majority',
@@ -111,7 +111,7 @@ const translations = {
     highestLead: 'उच्चतम मतान्तर',
     partyCandidates: 'दलका उम्मेदवारहरू',
     allWins: 'सबै जित',
-    winDifference: 'मतान्तर',
+    winDifference: 'जित अन्तर',
     higherVotes: 'उच्च मत',
     winningCandidates: 'जित घोषित',
     twoThirdsMajority: '२/३ बहुमत',
@@ -836,33 +836,9 @@ export default function App() {
             </div>
             
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
-              {/* Parliament Maps with Gaps */}
+              {/* Parliament Map */}
               <div className="relative flex flex-col items-center">
-                <div className="grid grid-cols-2 w-full gap-12 sm:gap-16">
-                  <div className="-ml-6 sm:-ml-10">
-                    <ParliamentChart 
-                      data={partyTotals} 
-                      language={language} 
-                      onPartyClick={setSelectedParty} 
-                      type="direct"
-                      totalSeats={165}
-                      size="small"
-                      label={t.directSeats}
-                    />
-                  </div>
-                  <div className="-mr-6 sm:-mr-10">
-                    <ParliamentChart 
-                      data={partyTotals} 
-                      language={language} 
-                      onPartyClick={setSelectedParty} 
-                      type="pr"
-                      totalSeats={110}
-                      size="small"
-                      label={t.proportionalVotes}
-                    />
-                  </div>
-                </div>
-                <div className="w-full max-w-lg -mt-10 sm:-mt-16">
+                <div className="w-full max-w-lg">
                   <ParliamentChart 
                     data={partyTotals} 
                     language={language} 
