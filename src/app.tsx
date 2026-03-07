@@ -764,8 +764,8 @@ export default function App() {
               <div className="divide-y divide-slate-100">
                 {partyTotals
                   .filter(([_, data]) => {
-                    // Show if has wins, leads, or proportional votes
-                    return data.won > 0 || data.count > 0 || data.samanupathik > 0;
+                    // Show if has wins, leads, or PR seats
+                    return data.won > 0 || data.count > 0 || data.prSeats > 0;
                   })
                   .map(([party, data]) => {
                     const total = data.won + data.count;
@@ -813,7 +813,7 @@ export default function App() {
                             <span className="text-sm font-black text-red-600">{data.prSeats > 0 ? formatNumber(data.prSeats) : '-'}</span>
                           </div>
                           <div className="bg-[#E0F2FE]/10 flex items-center justify-center border-l border-slate-100">
-                            <span className="text-sm font-black text-slate-900">{formatNumber(data.won + data.prSeats)}</span>
+                            <span className="text-sm font-black text-slate-900">{formatNumber(data.won + data.prSeats + data.count)}</span>
                           </div>
                           <div className="flex items-center justify-center border-l border-slate-100">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
