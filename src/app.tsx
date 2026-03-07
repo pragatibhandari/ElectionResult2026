@@ -31,7 +31,10 @@ const translations = {
     totalVotes: 'Total Votes',
     noResults: 'No results found',
     tryAdjusting: 'Try adjusting your search or filters',
-    dataSource: 'Data source: Election Commission of Nepal',
+    dataSource: 'Data source: Election Commission of Nepal (Mock Data for Demo)',
+    about: 'About',
+    methodology: 'Methodology',
+    contact: 'Contact',
     results: 'results',
     voteDistribution: 'Vote Distribution',
     voteShare: 'Vote Share',
@@ -42,7 +45,21 @@ const translations = {
     parties: 'Parties',
     proportionalVotes: 'Proportional Votes',
     directSeats: 'Direct Seats',
-    parliament: 'Parliament'
+    parliament: 'Parliament',
+    province: 'Province',
+    district: 'District',
+    allProvinces: 'All Provinces',
+    allDistricts: 'All Districts',
+    allConstituencies: 'All Constituencies',
+    sortBy: 'Sort By',
+    name: 'Name',
+    highestVotes: 'Highest Votes',
+    highestLead: 'Highest Lead',
+    partyCandidates: 'Party Candidates',
+    allWins: 'All Wins',
+    winDifference: 'Win Difference',
+    higherVotes: 'Higher Votes',
+    winningCandidates: 'Winning Candidates'
   },
   ne: {
     title: 'निर्वाचन २०२६',
@@ -62,7 +79,10 @@ const translations = {
     totalVotes: 'कुल मत',
     noResults: 'कुनै नतिजा भेटिएन',
     tryAdjusting: 'आफ्नो खोज वा फिल्टरहरू समायोजन गर्ने प्रयास गर्नुहोस्',
-    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग',
+    dataSource: 'डाटा स्रोत: नेपाल निर्वाचन आयोग (डेमोका लागि नक्कली डाटा)',
+    about: 'बारेमा',
+    methodology: 'विधि',
+    contact: 'सम्पर्क',
     results: 'नतिजाहरू',
     voteDistribution: 'मत वितरण',
     voteShare: 'मत हिस्सा',
@@ -73,7 +93,21 @@ const translations = {
     parties: 'पार्टीहरू',
     proportionalVotes: 'सामानुपातिक मत',
     directSeats: 'प्रत्यक्ष सिट',
-    parliament: 'संसद'
+    parliament: 'संसद',
+    province: 'प्रदेश',
+    district: 'जिल्ला',
+    allProvinces: 'सबै प्रदेश',
+    allDistricts: 'सबै जिल्ला',
+    allConstituencies: 'सबै निर्वाचन क्षेत्र',
+    sortBy: 'क्रमबद्ध गर्नुहोस्',
+    name: 'नाम',
+    highestVotes: 'उच्चतम मत',
+    highestLead: 'उच्चतम मतान्तर',
+    partyCandidates: 'दलका उम्मेदवारहरू',
+    allWins: 'सबै जित',
+    winDifference: 'मतान्तर',
+    higherVotes: 'उच्च मत',
+    winningCandidates: 'विजयी उम्मेदवारहरू'
   }
 };
 
@@ -110,7 +144,7 @@ const toNepaliNumerals = (num: number) => {
 };
 
 // Parliament Chart Component
-const ParliamentChart = ({ data, totalSeats = 165, language }: { data: any[], totalSeats?: number, language: Language }) => {
+const ParliamentChart = ({ data, totalSeats = 165, language, onPartyClick }: { data: any[], totalSeats?: number, language: Language, onPartyClick: (party: any) => void }) => {
   const rows = 7;
   const seatsPerRow = [14, 18, 22, 26, 30, 34, 38]; // Total 182, we'll trim to 165
   
@@ -197,7 +231,11 @@ const ParliamentChart = ({ data, totalSeats = 165, language }: { data: any[], to
         
         <div className="grid grid-cols-2 gap-2 mt-2">
           {data.slice(0, 6).map(([party, stats]) => (
-            <div key={party} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+            <button 
+              key={party} 
+              onClick={() => onPartyClick({ name: party, ...stats })}
+              className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100 hover:border-red-200 hover:bg-white transition-all text-left"
+            >
               <div className="flex items-center gap-2 overflow-hidden">
                 <div className="w-2 h-6 rounded-sm shrink-0" style={{ backgroundColor: stats.color || '#0ea5e9' }} />
                 <span className="text-[10px] font-bold text-slate-700 truncate">{party}</span>
@@ -205,7 +243,7 @@ const ParliamentChart = ({ data, totalSeats = 165, language }: { data: any[], to
               <span className="text-[10px] font-black text-slate-900">
                 {language === 'ne' ? toNepaliNumerals(stats.won) : stats.won}
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -224,6 +262,13 @@ export default function App() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [selectedConstituency, setSelectedConstituency] = useState<ConstituencyResult | null>(null);
   const [selectedParty, setSelectedParty] = useState<any | null>(null);
+  const [partySortBy, setPartySortBy] = useState<'name' | 'votes' | 'lead'>('votes');
+  const [winsSortBy, setWinsSortBy] = useState<'name' | 'votes' | 'lead'>('votes');
+  
+  // New Filter States
+  const [selectedProvince, setSelectedProvince] = useState<string>('');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
+  const [selectedConstituencyFilter, setSelectedConstituencyFilter] = useState<string>('');
 
   const t = translations[language];
 
@@ -234,6 +279,9 @@ export default function App() {
 
   const resetFilters = () => {
     setSearchTerm('');
+    setSelectedProvince('');
+    setSelectedDistrict('');
+    setSelectedConstituencyFilter('');
   };
 
   // Auto-sync logic
@@ -358,6 +406,30 @@ export default function App() {
       } as ConstituencyResult;
     }).filter((res): res is ConstituencyResult => res !== null);
   }, [battlesData]);
+
+  // Derived Filter Options
+  const provinces = useMemo(() => {
+    const set = new Set(processedBattlesData.map(r => r.province));
+    return Array.from(set).sort();
+  }, [processedBattlesData]);
+
+  const districts = useMemo(() => {
+    const filtered = selectedProvince 
+      ? processedBattlesData.filter(r => r.province === selectedProvince)
+      : processedBattlesData;
+    const set = new Set(filtered.map(r => r.district));
+    return Array.from(set).sort();
+  }, [processedBattlesData, selectedProvince]);
+
+  const constituencies = useMemo(() => {
+    const filtered = selectedDistrict
+      ? processedBattlesData.filter(r => r.district === selectedDistrict)
+      : (selectedProvince 
+          ? processedBattlesData.filter(r => r.province === selectedProvince)
+          : processedBattlesData);
+    const set = new Set(filtered.map(r => r.constituency.toString()));
+    return Array.from(set).sort((a, b) => parseInt(a as string) - parseInt(b as string));
+  }, [processedBattlesData, selectedProvince, selectedDistrict]);
 
   // Process data for Party Standings
   const processedPartyData = useMemo(() => {
@@ -497,13 +569,40 @@ export default function App() {
       const name = res.leader?.candidateName || '';
       const district = res.district || '';
       const province = res.province || '';
+      const constituency = res.constituency.toString();
       const search = searchTerm.toLowerCase();
       
-      return name.toLowerCase().includes(search) ||
-             district.toLowerCase().includes(search) ||
-             province.toLowerCase().includes(search);
+      const matchesSearch = name.toLowerCase().includes(search) ||
+                           district.toLowerCase().includes(search) ||
+                           province.toLowerCase().includes(search);
+      
+      const matchesProvince = !selectedProvince || province === selectedProvince;
+      const matchesDistrict = !selectedDistrict || district === selectedDistrict;
+      const matchesConstituency = !selectedConstituencyFilter || constituency === selectedConstituencyFilter;
+
+      return matchesSearch && matchesProvince && matchesDistrict && matchesConstituency;
     });
-  }, [processedBattlesData, searchTerm]);
+  }, [processedBattlesData, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
+
+  // Winning Candidates
+  const winningCandidates = useMemo(() => {
+    const winners = processedBattlesData
+      .filter(res => res.leader.status?.toLowerCase() === 'won')
+      .map(res => ({
+        ...res.leader,
+        province: res.province,
+        district: res.district,
+        constituency: res.constituency,
+        lead: res.lead,
+        totalVotes: res.totalVotes
+      }));
+
+    return winners.sort((a, b) => {
+      if (winsSortBy === 'name') return a.candidateName.localeCompare(b.candidateName);
+      if (winsSortBy === 'votes') return b.votes - a.votes;
+      return b.lead - a.lead;
+    });
+  }, [processedBattlesData, winsSortBy]);
 
   if (!hasLoaded) {
     return (
@@ -536,19 +635,6 @@ export default function App() {
               <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{t.subtitle}</p>
             </div>
           </button>
-
-          <div className="hidden md:flex items-center gap-4 flex-1 max-w-xl mx-8">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type="text"
-                placeholder={t.searchPlaceholder}
-                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-red-500 rounded-full text-sm transition-all outline-none"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
 
           <div className="flex items-center gap-4">
             {/* Language Switcher */}
@@ -700,7 +786,7 @@ export default function App() {
                 {t.parliament}
               </h2>
             </div>
-            <ParliamentChart data={partyTotals} language={language} />
+            <ParliamentChart data={partyTotals} language={language} onPartyClick={setSelectedParty} />
             
             <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
               <div className="flex justify-between items-end">
@@ -719,6 +805,184 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* Search and Filters Section */}
+        <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex-1 relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <input 
+                type="text"
+                placeholder={t.searchPlaceholder}
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-base focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="relative">
+                <MapIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <select 
+                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl text-xs font-black pl-12 pr-10 py-4 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-all"
+                  value={selectedProvince}
+                  onChange={(e) => {
+                    setSelectedProvince(e.target.value);
+                    setSelectedDistrict('');
+                    setSelectedConstituencyFilter('');
+                  }}
+                >
+                  <option value="">{t.allProvinces}</option>
+                  {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
+              </div>
+
+              <div className="relative">
+                <MapIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <select 
+                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl text-xs font-black pl-12 pr-10 py-4 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-all"
+                  value={selectedDistrict}
+                  onChange={(e) => {
+                    setSelectedDistrict(e.target.value);
+                    setSelectedConstituencyFilter('');
+                  }}
+                >
+                  <option value="">{t.allDistricts}</option>
+                  {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
+              </div>
+
+              <div className="relative">
+                <MapIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <select 
+                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl text-xs font-black pl-12 pr-10 py-4 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none appearance-none cursor-pointer hover:bg-slate-100 transition-all"
+                  value={selectedConstituencyFilter}
+                  onChange={(e) => setSelectedConstituencyFilter(e.target.value)}
+                >
+                  <option value="">{t.allConstituencies}</option>
+                  {constituencies.map(c => <option key={c} value={c}>{t.constituency} {formatNumber(parseInt(c))}</option>)}
+                </select>
+                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
+              </div>
+            </div>
+          </div>
+          {(searchTerm || selectedProvince || selectedDistrict || selectedConstituencyFilter) && (
+            <div className="mt-4 flex justify-end">
+              <button 
+                onClick={resetFilters}
+                className="text-[10px] font-bold text-red-600 uppercase tracking-widest hover:text-red-700 transition-colors flex items-center gap-2"
+              >
+                <X className="w-3 h-3" /> {language === 'ne' ? 'सबै फिल्टरहरू हटाउनुहोस्' : 'Clear All Filters'}
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Winning Candidates Section */}
+        {winningCandidates.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+                  <Trophy className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">{t.winningCandidates}</h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {formatNumber(winningCandidates.length)} {t.allWins}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">{t.sortBy}:</span>
+                <div className="flex bg-slate-100 p-1 rounded-lg">
+                  <button 
+                    onClick={() => setWinsSortBy('name')}
+                    className={`px-4 py-2 text-[10px] font-bold rounded-md transition-all ${winsSortBy === 'name' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    {t.name}
+                  </button>
+                  <button 
+                    onClick={() => setWinsSortBy('votes')}
+                    className={`px-4 py-2 text-[10px] font-bold rounded-md transition-all ${winsSortBy === 'votes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    {t.higherVotes}
+                  </button>
+                  <button 
+                    onClick={() => setWinsSortBy('lead')}
+                    className={`px-4 py-2 text-[10px] font-bold rounded-md transition-all ${winsSortBy === 'lead' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    {t.winDifference}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {winningCandidates.map((winner, idx) => (
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.02 }}
+                  className="group flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-red-100 transition-all cursor-pointer"
+                  onClick={() => {
+                    const res = processedBattlesData.find(r => r.province === winner.province && r.district === winner.district && r.constituency === winner.constituency);
+                    if (res) setSelectedConstituency(res);
+                  }}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="relative shrink-0">
+                      <img src={winner.candidatePicture} className="w-12 h-12 rounded-xl object-cover border-2 border-slate-50" alt="" referrerPolicy="no-referrer" />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
+                        <img src={winner.partyIcon} className="w-full h-full object-contain" alt="" referrerPolicy="no-referrer" />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-black text-slate-900 truncate group-hover:text-red-600 transition-colors">{winner.candidateName}</h3>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const partyInfo = partyTotals.find(([name]) => name === winner.partyName);
+                          if (partyInfo) {
+                            setSelectedParty({
+                              name: partyInfo[0],
+                              ...partyInfo[1]
+                            });
+                          }
+                        }}
+                        className="text-[10px] font-bold text-slate-400 uppercase truncate hover:text-red-600 transition-colors block"
+                      >
+                        {winner.partyName}
+                      </button>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[8px] font-black uppercase">
+                          {winner.district} {formatNumber(winner.constituency)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase">{winsSortBy === 'lead' ? t.winDifference : t.votes}</p>
+                    <p className={`text-sm font-black ${winsSortBy === 'lead' ? 'text-green-600' : 'text-slate-900'}`}>
+                      {winsSortBy === 'lead' ? `+${formatNumber(winner.lead)}` : formatNumber(winner.votes)}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Bottom Row: Main Battles */}
         <section className="space-y-8">
@@ -797,7 +1061,21 @@ export default function App() {
                                     <Trophy className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                                   )}
                                 </h3>
-                                <p className="text-[10px] font-medium text-slate-400 truncate">{candidate.partyName}</p>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const partyInfo = partyTotals.find(([name]) => name === candidate.partyName);
+                                    if (partyInfo) {
+                                      setSelectedParty({
+                                        name: partyInfo[0],
+                                        ...partyInfo[1]
+                                      });
+                                    }
+                                  }}
+                                  className="text-[10px] font-medium text-slate-400 truncate hover:text-red-600 transition-colors text-left"
+                                >
+                                  {candidate.partyName}
+                                </button>
                               </div>
                               <div className="text-right">
                                 <p className={`${idx === 0 ? 'font-black text-sm' : 'font-bold text-xs'} text-slate-800`}>
@@ -865,7 +1143,7 @@ export default function App() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -890,46 +1168,96 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="p-8 space-y-8">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-[#FEF9C3] rounded-2xl p-6 border border-yellow-100">
-                    <p className="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">{t.leading}</p>
-                    <p className="text-4xl font-black text-yellow-800">{formatNumber(selectedParty.count)}</p>
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-8 space-y-8">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-[#FEF9C3] rounded-2xl p-4 border border-yellow-100">
+                      <p className="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">{t.leading}</p>
+                      <p className="text-2xl font-black text-yellow-800">{formatNumber(selectedParty.count)}</p>
+                    </div>
+                    <div className="bg-[#FFEDD5] rounded-2xl p-4 border border-orange-100">
+                      <p className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-1">{t.won}</p>
+                      <p className="text-2xl font-black text-orange-800">{formatNumber(selectedParty.won)}</p>
+                    </div>
+                    <div className="bg-[#E0F2FE] rounded-2xl p-4 border border-blue-100">
+                      <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1">{t.totalSeats}</p>
+                      <p className="text-2xl font-black text-blue-800">{formatNumber(selectedParty.won + selectedParty.count)}</p>
+                    </div>
+                    <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
+                      <p className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">{t.proportionalVotes}</p>
+                      <p className="text-2xl font-black text-red-800">{formatNumber(selectedParty.samanupathik)}</p>
+                    </div>
                   </div>
-                  <div className="bg-[#FFEDD5] rounded-2xl p-6 border border-orange-100">
-                    <p className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-1">{t.won}</p>
-                    <p className="text-4xl font-black text-orange-800">{formatNumber(selectedParty.won)}</p>
-                  </div>
-                  <div className="bg-[#E0F2FE] rounded-2xl p-6 border border-blue-100">
-                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1">{t.totalSeats}</p>
-                    <p className="text-4xl font-black text-blue-800">{formatNumber(selectedParty.won + selectedParty.count)}</p>
-                  </div>
-                  <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
-                    <p className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">{t.proportionalVotes}</p>
-                    <p className="text-4xl font-black text-red-800">{formatNumber(selectedParty.samanupathik)}</p>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t.results}</h3>
-                  <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(selectedParty.won / 138) * 100}%` }}
-                      className="h-full"
-                      style={{ backgroundColor: '#22c55e' }}
-                    />
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(selectedParty.count / 138) * 100}%` }}
-                      className="h-full"
-                      style={{ backgroundColor: selectedParty.color || '#0ea5e9' }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                    <span>0</span>
-                    <span>{t.majority} (138)</span>
-                    <span>275</span>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t.partyCandidates}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">{t.sortBy}:</span>
+                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                          <button 
+                            onClick={() => setPartySortBy('name')}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${partySortBy === 'name' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                          >
+                            {t.name}
+                          </button>
+                          <button 
+                            onClick={() => setPartySortBy('votes')}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${partySortBy === 'votes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                          >
+                            {t.votes}
+                          </button>
+                          <button 
+                            onClick={() => setPartySortBy('lead')}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${partySortBy === 'lead' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                          >
+                            {t.leadMargin}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {processedBattlesData
+                        .filter(res => res.leader.partyName === selectedParty.name || res.topCandidates.some(c => c.partyName === selectedParty.name))
+                        .map(res => {
+                          const candidate = res.topCandidates.find(c => c.partyName === selectedParty.name)!;
+                          const isLeader = res.leader.candidateName === candidate.candidateName;
+                          const leadValue = isLeader ? res.lead : (candidate.votes - res.leader.votes);
+                          return { ...candidate, res, leadValue };
+                        })
+                        .sort((a, b) => {
+                          if (partySortBy === 'name') return a.candidateName.localeCompare(b.candidateName);
+                          if (partySortBy === 'votes') return b.votes - a.votes;
+                          return b.leadValue - a.leadValue;
+                        })
+                        .map((c, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div className="flex items-center gap-4">
+                              <img src={c.candidatePicture} className="w-10 h-10 rounded-full object-cover border-2 border-white" alt="" referrerPolicy="no-referrer" />
+                              <div>
+                                <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                  {c.candidateName}
+                                  {c.status?.toLowerCase() === 'won' && <Trophy className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+                                </p>
+                                <button 
+                                  onClick={() => setSelectedConstituency(c.res)}
+                                  className="text-[10px] font-bold text-slate-400 uppercase hover:text-red-600 transition-colors text-left block"
+                                >
+                                  {c.res.province} • {c.res.district} • {t.constituency} {formatNumber(c.res.constituency)}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-black text-slate-900">{formatNumber(c.votes)}</p>
+                              <p className={`text-[10px] font-bold ${c.leadValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {c.leadValue >= 0 ? '+' : ''}{formatNumber(c.leadValue)}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1115,9 +1443,23 @@ export default function App() {
                               />
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">{c.candidateName}</p>
-                            <p className="text-[10px] font-medium text-slate-400">{c.partyName}</p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-bold text-slate-900">{c.candidateName}</h3>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const partyInfo = partyTotals.find(([name]) => name === c.partyName);
+                                if (partyInfo) {
+                                  setSelectedParty({
+                                    name: partyInfo[0],
+                                    ...partyInfo[1]
+                                  });
+                                }
+                              }}
+                              className="text-[10px] font-medium text-slate-400 hover:text-red-600 transition-colors text-left"
+                            >
+                              {c.partyName}
+                            </button>
                           </div>
                         </div>
                         <div className="col-span-3 text-right">
@@ -1150,15 +1492,10 @@ export default function App() {
 
       {/* Footer Info */}
       <footer className="max-w-7xl mx-auto px-4 py-12 border-t border-slate-200">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="flex justify-center items-center">
           <div className="flex items-center gap-4 text-slate-400">
             <Info className="w-5 h-5" />
-            <p className="text-xs font-medium">{t.dataSource}</p>
-          </div>
-          <div className="flex gap-8">
-            <a href="#" className="text-xs font-bold text-slate-500 hover:text-red-600 uppercase tracking-widest">{t.about}</a>
-            <a href="#" className="text-xs font-bold text-slate-500 hover:text-red-600 uppercase tracking-widest">{t.methodology}</a>
-            <a href="#" className="text-xs font-bold text-slate-500 hover:text-red-600 uppercase tracking-widest">{t.contact}</a>
+            <p className="text-xs font-medium">Data source: Election Commission of Nepal</p>
           </div>
         </div>
       </footer>
