@@ -51,6 +51,8 @@ const translations = {
     allProvinces: 'All Provinces',
     allDistricts: 'All Districts',
     allConstituencies: 'All Constituencies',
+    districts: 'Districts',
+    constituencies: 'Constituencies',
     sortBy: 'Sort By',
     name: 'Name',
     highestVotes: 'Highest Votes',
@@ -65,7 +67,9 @@ const translations = {
     neededForMajority: 'Needed for Majority',
     neededForTwoThirds: 'Needed for 2/3',
     target: 'Target',
-    total: 'Total'
+    total: 'Total',
+    estimated: 'Estimated',
+    totalPrVotes: 'Total PR Votes'
   },
   ne: {
     title: 'निर्वाचन २०२६',
@@ -105,6 +109,8 @@ const translations = {
     allProvinces: 'सबै प्रदेश',
     allDistricts: 'सबै जिल्ला',
     allConstituencies: 'सबै निर्वाचन क्षेत्र',
+    districts: 'जिल्लाहरू',
+    constituencies: 'निर्वाचन क्षेत्रहरू',
     sortBy: 'क्रमबद्ध गर्नुहोस्',
     name: 'नाम',
     highestVotes: 'उच्चतम मत',
@@ -119,7 +125,9 @@ const translations = {
     neededForMajority: 'बहुमतका लागि आवश्यक',
     neededForTwoThirds: '२/३ का लागि आवश्यक',
     target: 'लक्ष्य',
-    total: 'कुल'
+    total: 'कुल',
+    estimated: 'अनुमानित',
+    totalPrVotes: 'कुल समानुपातिक मत'
   }
 };
 
@@ -648,9 +656,29 @@ export default function App() {
 
   const displayedBattles = useMemo(() => {
     const isFiltering = searchTerm || selectedProvince || selectedDistrict || selectedConstituencyFilter;
-    if (isFiltering) return filteredResults;
-    return filteredResults.slice(0, 9);
-  }, [filteredResults, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
+    
+    if (isFiltering) {
+      // Show all matching results when filtering
+      return filteredResults;
+    }
+
+    // Default view: Show top 9 ongoing battles (where win is not declared)
+    const ongoingBattles = processedBattlesData.filter(res => res.leader.status?.toLowerCase() !== 'won');
+    if (ongoingBattles.length > 0) {
+      return ongoingBattles.slice(0, 9);
+    }
+    
+    // If all are won, show first 9
+    return processedBattlesData.slice(0, 9);
+  }, [processedBattlesData, filteredResults, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
+
+  const searchSummary = useMemo(() => {
+    const districtSet = new Set(displayedBattles.map(r => r.district));
+    return {
+      districts: districtSet.size,
+      constituencies: displayedBattles.length
+    };
+  }, [displayedBattles]);
 
   if (!hasLoaded) {
     return (
@@ -726,6 +754,12 @@ export default function App() {
                 <BarChart3 className="w-5 h-5 text-red-600" /> 
                 {t.partyStanding}
               </h2>
+              <div className="bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex flex-col items-end">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t.totalPrVotes}</p>
+                <p className="text-sm font-black text-slate-900 leading-none">
+                  {formatNumber(partyTotals.reduce((acc, [_, data]) => acc + (data.samanupathik || 0), 0))}
+                </p>
+              </div>
             </div>
             <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               {/* Table Header */}
@@ -733,7 +767,7 @@ export default function App() {
                 <div className="col-span-5 p-4 flex items-center">
                   <h2 className="text-sm font-bold text-slate-800">{t.parties}</h2>
                 </div>
-                <div className="col-span-7 grid grid-cols-5 h-full">
+                <div className="col-span-7 grid grid-cols-[repeat(3,minmax(0,1fr))_1.5fr_minmax(0,1fr)] h-full">
                   <div className="bg-[#FEF9C3] flex flex-col items-center justify-center p-2 border-l border-slate-100">
                     <div className="flex items-center gap-1 text-[8px] font-bold text-yellow-700">
                       <TrendingUp className="w-2 h-2" /> {t.leading}
@@ -749,13 +783,13 @@ export default function App() {
                       {language === 'ne' ? 'समानुपातिक सिट' : 'PR Seats'}
                     </div>
                   </div>
-                  <div className="bg-[#E0F2FE] flex flex-col items-center justify-center p-2 border-l border-slate-100">
-                    <div className="text-[8px] font-bold text-blue-700">{t.totalSeats}</div>
-                  </div>
                   <div className="bg-white flex flex-col items-center justify-center p-2 border-l border-slate-100">
                     <div className="text-[8px] font-bold text-slate-600 text-center leading-tight">
                       {language === 'ne' ? 'समानुपातिक मत' : 'PR Votes'}
                     </div>
+                  </div>
+                  <div className="bg-[#E0F2FE] flex flex-col items-center justify-center p-2 border-l border-slate-100">
+                    <div className="text-[8px] font-bold text-blue-700">{t.totalSeats}</div>
                   </div>
                 </div>
               </div>
@@ -802,7 +836,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="col-span-7 grid grid-cols-5">
+                        <div className="col-span-7 grid grid-cols-[repeat(3,minmax(0,1fr))_1.5fr_minmax(0,1fr)]">
                           <div className="bg-[#FEF9C3]/10 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-bold text-slate-700">{data.count > 0 ? formatNumber(data.count) : '-'}</span>
                           </div>
@@ -812,11 +846,11 @@ export default function App() {
                           <div className="bg-red-50/30 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-black text-red-600">{data.prSeats > 0 ? formatNumber(data.prSeats) : '-'}</span>
                           </div>
-                          <div className="bg-[#E0F2FE]/10 flex items-center justify-center border-l border-slate-100">
-                            <span className="text-sm font-black text-slate-900">{formatNumber(data.won + data.prSeats + data.count)}</span>
-                          </div>
                           <div className="flex items-center justify-center border-l border-slate-100">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
+                          </div>
+                          <div className="bg-[#E0F2FE]/10 flex items-center justify-center border-l border-slate-100">
+                            <span className="text-sm font-black text-slate-900">{formatNumber(data.won + data.prSeats + data.count)}</span>
                           </div>
                         </div>
                       </div>
@@ -887,7 +921,7 @@ export default function App() {
                             <div>
                               <p className="text-[9px] font-black opacity-60 uppercase tracking-widest">{t.proportionalVotes}</p>
                               <p className="text-lg font-black">
-                                {language === 'ne' ? toNepaliNumerals(declaredPR) : declaredPR}/{prTotal} {language === 'ne' ? 'घोषित' : 'Declared'}
+                                {language === 'ne' ? toNepaliNumerals(declaredPR) : declaredPR}/{prTotal} {t.estimated}
                               </p>
                             </div>
                             <div className="text-right">
@@ -1099,7 +1133,23 @@ export default function App() {
             </div>
           </div>
           {(searchTerm || selectedProvince || selectedDistrict || selectedConstituencyFilter) && (
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                  <div className="flex items-center gap-4">
+                    {searchSummary.districts > 1 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-black text-slate-900">{formatNumber(searchSummary.districts)}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.districts}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-black text-slate-900">{formatNumber(searchSummary.constituencies)}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.constituencies}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <button 
                 onClick={resetFilters}
                 className="text-[10px] font-bold text-red-600 uppercase tracking-widest hover:text-red-700 transition-colors flex items-center gap-2"
@@ -1313,27 +1363,35 @@ export default function App() {
                     transition={{ delay: idx * 0.02 }}
                     className="group flex items-center justify-between p-4 rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
                     style={{ 
-                      backgroundColor: winner.partyColor || '#ffffff', 
-                      borderColor: winner.partyColor ? 'transparent' : '#e2e8f0',
-                      color: winner.partyColor ? '#ffffff' : '#0f172a'
+                      backgroundColor: winner.candidateName.includes('Balen') ? '#ffffff' : (winner.partyColor || '#ffffff'), 
+                      borderColor: winner.candidateName.includes('Balen') ? (winner.partyColor || '#e2e8f0') : (winner.partyColor ? 'transparent' : '#e2e8f0'),
+                      color: winner.candidateName.includes('Balen') ? '#0f172a' : (winner.partyColor ? '#ffffff' : '#0f172a')
                     }}
                     onClick={() => {
                       const res = processedBattlesData.find(r => r.province === winner.province && r.district === winner.district && r.constituency === winner.constituency);
                       if (res) setSelectedConstituency(res);
                     }}
                   >
-                    {/* Background Trophy Icon */}
-                    <Trophy className={`absolute -right-2 -bottom-2 w-16 h-16 ${winner.partyColor ? 'opacity-[0.1]' : 'opacity-[0.03]'} rotate-12 pointer-events-none`} />
-                    
                     <div className="flex items-center gap-4 min-w-0 relative z-10">
                       <div className="relative shrink-0">
-                        <img src={winner.candidatePicture} className="w-12 h-12 rounded-xl object-cover border-2 border-white/20" alt="" referrerPolicy="no-referrer" />
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
-                          <img src={winner.partyIcon} className="w-full h-full object-contain" alt="" referrerPolicy="no-referrer" />
-                        </div>
+                        {winner.candidatePicture ? (
+                          <img src={winner.candidatePicture} className="w-12 h-12 rounded-xl object-cover border-2 border-white/20" alt="" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 border-2 border-white/20">
+                            <Users className="w-6 h-6" />
+                          </div>
+                        )}
+                        {winner.partyIcon && (
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full p-0.5 shadow-sm border border-slate-100">
+                            <img src={winner.partyIcon} className="w-full h-full object-contain" alt="" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
                       </div>
                       <div className="min-w-0">
-                        <h3 className={`text-sm font-black truncate transition-colors ${winner.partyColor ? 'text-white' : 'text-slate-900 group-hover:text-red-600'}`}>{winner.candidateName}</h3>
+                        <h3 className={`text-sm font-black truncate transition-colors flex items-center gap-2 ${winner.candidateName.includes('Balen') ? 'text-slate-900 group-hover:text-red-600' : (winner.partyColor ? 'text-white' : 'text-slate-900 group-hover:text-red-600')}`}>
+                          {winner.candidateName}
+                          <Trophy className={`w-3.5 h-3.5 shrink-0 ${winner.candidateName.includes('Balen') ? 'text-yellow-500' : (winner.partyColor ? 'text-white' : 'text-yellow-500')}`} />
+                        </h3>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1345,12 +1403,12 @@ export default function App() {
                               });
                             }
                           }}
-                          className={`text-[10px] font-bold uppercase truncate transition-colors block ${winner.partyColor ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-red-600'}`}
+                          className={`text-[10px] font-bold uppercase truncate transition-colors block ${winner.candidateName.includes('Balen') ? 'text-slate-400 hover:text-red-600' : (winner.partyColor ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-red-600')}`}
                         >
                           {winner.partyName}
                         </button>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${winner.partyColor ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${winner.candidateName.includes('Balen') ? 'bg-slate-100 text-slate-600' : (winner.partyColor ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600')}`}>
                             {winner.district} {formatNumber(winner.constituency)}
                           </span>
                         </div>
@@ -1358,12 +1416,12 @@ export default function App() {
                     </div>
                     <div className="text-right shrink-0 relative z-10">
                       <div className="mb-1">
-                        <p className={`text-[8px] font-bold uppercase ${winner.partyColor ? 'text-white/60' : 'text-slate-400'}`}>{t.votes}</p>
-                        <p className={`text-sm font-black ${winner.partyColor ? 'text-white' : 'text-slate-900'}`}>{formatNumber(winner.votes)}</p>
+                        <p className={`text-[8px] font-bold uppercase ${winner.candidateName.includes('Balen') ? 'text-slate-400' : (winner.partyColor ? 'text-white/60' : 'text-slate-400')}`}>{t.votes}</p>
+                        <p className={`text-sm font-black ${winner.candidateName.includes('Balen') ? 'text-slate-900' : (winner.partyColor ? 'text-white' : 'text-slate-900')}`}>{formatNumber(winner.votes)}</p>
                       </div>
                       <div>
-                        <p className={`text-[8px] font-bold uppercase ${winner.partyColor ? 'text-white/60' : 'text-slate-400'}`}>{t.winDifference}</p>
-                        <p className={`text-sm font-black ${winner.partyColor ? 'text-white' : 'text-green-600'}`}>+{formatNumber(winner.lead)}</p>
+                        <p className={`text-[8px] font-bold uppercase ${winner.candidateName.includes('Balen') ? 'text-slate-400' : (winner.partyColor ? 'text-white/60' : 'text-slate-400')}`}>{t.winDifference}</p>
+                        <p className={`text-sm font-black ${winner.candidateName.includes('Balen') ? 'text-green-600' : (winner.partyColor ? 'text-white' : 'text-green-600')}`}>+{formatNumber(winner.lead)}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -1483,7 +1541,13 @@ export default function App() {
                         .map((c, idx) => (
                           <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                             <div className="flex items-center gap-4">
-                              <img src={c.candidatePicture} className="w-10 h-10 rounded-full object-cover border-2 border-white" alt="" referrerPolicy="no-referrer" />
+                              {c.candidatePicture ? (
+                                <img src={c.candidatePicture} className="w-10 h-10 rounded-full object-cover border-2 border-white" alt="" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border-2 border-white">
+                                  <Users className="w-5 h-5" />
+                                </div>
+                              )}
                               <div>
                                 <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
                                   {c.candidateName}
