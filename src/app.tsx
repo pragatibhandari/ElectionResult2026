@@ -680,6 +680,11 @@ export default function App() {
     };
   }, [displayedBattles]);
 
+  const totalPrVotes = useMemo(() => 
+    partyTotals.reduce((acc, [_, data]) => acc + (data.samanupathik || 0), 0),
+    [partyTotals]
+  );
+
   if (!hasLoaded) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -757,7 +762,7 @@ export default function App() {
               <div className="bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex flex-col items-end">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t.totalPrVotes}</p>
                 <p className="text-sm font-black text-slate-900 leading-none">
-                  {formatNumber(partyTotals.reduce((acc, [_, data]) => acc + (data.samanupathik || 0), 0))}
+                  {formatNumber(totalPrVotes)}
                 </p>
               </div>
             </div>
@@ -846,8 +851,16 @@ export default function App() {
                           <div className="bg-red-50/30 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-black text-red-600">{data.prSeats > 0 ? formatNumber(data.prSeats) : '-'}</span>
                           </div>
-                          <div className="flex items-center justify-center border-l border-slate-100">
+                          <div className="flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
+                            {data.samanupathik > 0 && totalPrVotes > 0 && (
+                              <span className="text-[8px] font-medium text-slate-400">
+                                {language === 'ne' 
+                                  ? toNepaliNumerals(((data.samanupathik / totalPrVotes) * 100).toFixed(1) as any) + '%'
+                                  : ((data.samanupathik / totalPrVotes) * 100).toFixed(1) + '%'
+                                }
+                              </span>
+                            )}
                           </div>
                           <div className="bg-[#E0F2FE]/10 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-black text-slate-900">{formatNumber(data.won + data.prSeats + data.count)}</span>
