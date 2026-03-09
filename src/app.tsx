@@ -16,7 +16,7 @@ const translations = {
   en: {
     title: 'Election 2026',
     subtitle: 'Main Battle Dashboard',
-    searchPlaceholder: 'Search candidate name or district...',
+    searchPlaceholder: 'Search name, district or province...',
     lastUpdated: 'Last Updated',
     partyStanding: 'Party Standing',
     party: 'Party',
@@ -69,12 +69,13 @@ const translations = {
     target: 'Target',
     total: 'Total',
     estimated: 'Estimated',
-    totalPrVotes: 'Total PR Votes'
+    totalPrVotes: 'Total PR Votes',
+    projected: 'Projected'
   },
   ne: {
     title: 'निर्वाचन २०२६',
     subtitle: 'मुख्य प्रतिस्पर्धा ड्यासबोर्ड',
-    searchPlaceholder: 'उम्मेदवारको नाम वा जिल्ला खोज्नुहोस्...',
+    searchPlaceholder: 'नाम, जिल्ला वा प्रदेश खोज्नुहोस्...',
     lastUpdated: 'अन्तिम अपडेट',
     partyStanding: 'दलगत अवस्था',
     party: 'दल',
@@ -127,7 +128,8 @@ const translations = {
     target: 'लक्ष्य',
     total: 'कुल',
     estimated: 'अनुमानित',
-    totalPrVotes: 'कुल समानुपातिक मत'
+    totalPrVotes: 'कुल समानुपातिक मत',
+    projected: 'अनुमानित'
   }
 };
 
@@ -152,6 +154,7 @@ interface ConstituencyResult {
   leader: Candidate;
   runnerUp: Candidate | null;
   topCandidates: Candidate[];
+  allCandidates: Candidate[];
   totalVotes: number;
   lead: number;
   winProbability: number;
@@ -447,6 +450,7 @@ export default function App() {
         leader,
         runnerUp,
         topCandidates,
+        allCandidates: sorted,
         totalVotes,
         lead,
         winProbability
@@ -503,9 +507,23 @@ export default function App() {
     }).filter(res => res !== null);
   }, [partyData]);
 
+  const totalPrVotes = useMemo(() => {
+    return samanupathikData.reduce((acc, item) => {
+      const parseVotes = (val: any) => {
+        if (val === undefined || val === null) return 0;
+        if (typeof val === 'number') return val;
+        const cleaned = String(val).replace(/,/g, '');
+        const parsed = parseInt(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+      const votes = parseVotes(item.Pr_votes || item.Pr_Votes || item.votes || item.samanupathik || item.Votes || item.Samanupathik || item['Samanupathik Votes']);
+      return acc + votes;
+    }, 0);
+  }, [samanupathikData]);
+
   // Party Totals for Sidebar
   const partyTotals = useMemo(() => {
-    const totals: Record<string, { count: number; won: number; color: string; icon: string; samanupathik: number; prSeats: number }> = {};
+    const totals: Record<string, { count: number; won: number; color: string; icon: string; samanupathik: number; prSeats: number; projectedPrSeats: number }> = {};
     
     // Process Samanupathik Data first
     samanupathikData.forEach(item => {
@@ -521,7 +539,7 @@ export default function App() {
       const votes = parseVotes(item.Pr_votes || item.Pr_Votes || item.votes || item.samanupathik || item.Votes || item.Samanupathik || item['Samanupathik Votes']);
       
       if (!totals[party]) {
-        totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: votes, prSeats: 0 };
+        totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: votes, prSeats: 0, projectedPrSeats: 0 };
       } else {
         totals[party].samanupathik += votes;
       }
@@ -545,7 +563,8 @@ export default function App() {
             color: c.partyColor || '#cbd5e1',
             icon: c.partyIcon || '',
             samanupathik: 0,
-            prSeats: 0
+            prSeats: 0,
+            projectedPrSeats: 0
           };
         } else {
           totals[party].count += leading;
@@ -559,7 +578,7 @@ export default function App() {
       processedPartyData.forEach(res => {
         const party = res.leader?.partyName || 'Unknown';
         if (!totals[party]) {
-          totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: 0, prSeats: 0 };
+          totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: 0, prSeats: 0, projectedPrSeats: 0 };
         }
         
         const status = (res.leader?.status || '').toLowerCase();
@@ -580,6 +599,7 @@ export default function App() {
     const eligibleParties = Object.entries(totals).filter(([_, data]) => data.samanupathik >= THRESHOLD);
 
     if (eligibleParties.length > 0) {
+      // 1. Actual Seats (based on current counted votes vs total expected quota)
       let allocatedSeats = 0;
       const partyRemainders: { party: string, remainder: number }[] = [];
 
@@ -592,12 +612,40 @@ export default function App() {
       });
 
       // Distribute remaining seats using largest remainder method among eligible parties
-      partyRemainders.sort((a, b) => b.remainder - a.remainder);
-      let i = 0;
-      while (allocatedSeats < TOTAL_PR_SEATS && i < partyRemainders.length) {
-        totals[partyRemainders[i].party].prSeats += 1;
-        allocatedSeats += 1;
-        i++;
+      // Note: This only applies if we've reached the total cast votes. 
+      // If votes are still being counted, allocatedSeats will be < 110.
+      if (allocatedSeats < TOTAL_PR_SEATS && totalPrVotes >= TOTAL_CAST_VOTES) {
+        partyRemainders.sort((a, b) => b.remainder - a.remainder);
+        let i = 0;
+        while (allocatedSeats < TOTAL_PR_SEATS && i < partyRemainders.length) {
+          totals[partyRemainders[i].party].prSeats += 1;
+          allocatedSeats += 1;
+          i++;
+        }
+      }
+
+      // 2. Projected Seats (divide 110 seats among eligible parties based on current vote share of eligible pool)
+      const totalEligibleVotes = eligibleParties.reduce((sum, [_, data]) => sum + data.samanupathik, 0);
+      if (totalEligibleVotes > 0) {
+        let projectedAllocated = 0;
+        const projectedRemainders: { party: string, remainder: number }[] = [];
+
+        eligibleParties.forEach(([party, data]) => {
+          const rawProjected = (data.samanupathik / totalEligibleVotes) * TOTAL_PR_SEATS;
+          const seats = Math.floor(rawProjected);
+          totals[party].projectedPrSeats = seats;
+          projectedAllocated += seats;
+          projectedRemainders.push({ party, remainder: rawProjected - seats });
+        });
+
+        // Distribute remaining seats to reach exactly 110
+        projectedRemainders.sort((a, b) => b.remainder - a.remainder);
+        let j = 0;
+        while (projectedAllocated < TOTAL_PR_SEATS && j < projectedRemainders.length) {
+          totals[projectedRemainders[j].party].projectedPrSeats += 1;
+          projectedAllocated += 1;
+          j++;
+        }
       }
     }
     
@@ -614,9 +662,25 @@ export default function App() {
 
   // Winning Candidates
   const winningCandidates = useMemo(() => {
+    const search = searchTerm.toLowerCase();
     const winners = processedBattlesData
       .filter(res => res.leader.status?.toLowerCase() === 'won')
       .filter(res => !selectedPartyFilter || res.leader.partyName === selectedPartyFilter)
+      .filter(res => {
+        const district = res.district || '';
+        const province = res.province || '';
+        const constituency = res.constituency.toString();
+        
+        const matchesSearch = res.allCandidates.some(c => c.candidateName.toLowerCase().includes(search)) ||
+                             district.toLowerCase().includes(search) ||
+                             province.toLowerCase().includes(search);
+        
+        const matchesProvince = !selectedProvince || province === selectedProvince;
+        const matchesDistrict = !selectedDistrict || district === selectedDistrict;
+        const matchesConstituency = !selectedConstituencyFilter || constituency === selectedConstituencyFilter;
+
+        return matchesSearch && matchesProvince && matchesDistrict && matchesConstituency;
+      })
       .map(res => ({
         ...res.leader,
         province: res.province,
@@ -631,18 +695,17 @@ export default function App() {
       if (winsSortBy === 'votes') return b.votes - a.votes;
       return b.lead - a.lead;
     });
-  }, [processedBattlesData, winsSortBy, selectedPartyFilter]);
+  }, [processedBattlesData, winsSortBy, selectedPartyFilter, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
 
   // Filtered Results
   const filteredResults = useMemo(() => {
     return processedBattlesData.filter(res => {
-      const name = res.leader?.candidateName || '';
       const district = res.district || '';
       const province = res.province || '';
       const constituency = res.constituency.toString();
       const search = searchTerm.toLowerCase();
       
-      const matchesSearch = name.toLowerCase().includes(search) ||
+      const matchesSearch = res.allCandidates.some(c => c.candidateName.toLowerCase().includes(search)) ||
                            district.toLowerCase().includes(search) ||
                            province.toLowerCase().includes(search);
       
@@ -679,11 +742,6 @@ export default function App() {
       constituencies: displayedBattles.length
     };
   }, [displayedBattles]);
-
-  const totalPrVotes = useMemo(() => 
-    partyTotals.reduce((acc, [_, data]) => acc + (data.samanupathik || 0), 0),
-    [partyTotals]
-  );
 
   if (!hasLoaded) {
     return (
@@ -848,8 +906,14 @@ export default function App() {
                           <div className="bg-[#FFEDD5]/10 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-bold text-slate-900">{data.won > 0 ? formatNumber(data.won) : '-'}</span>
                           </div>
-                          <div className="bg-red-50/30 flex items-center justify-center border-l border-slate-100">
+                          <div className="bg-red-50/30 flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-sm font-black text-red-600">{data.prSeats > 0 ? formatNumber(data.prSeats) : '-'}</span>
+                            {data.projectedPrSeats > 0 && (
+                              <div className="flex flex-col items-center mt-0.5">
+                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter leading-none">{t.projected}</span>
+                                <span className="text-[10px] font-bold text-red-400 leading-none">{formatNumber(data.projectedPrSeats)}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
