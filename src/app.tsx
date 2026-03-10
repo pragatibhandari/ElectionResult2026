@@ -69,8 +69,7 @@ const translations = {
     target: 'Target',
     total: 'Total',
     estimated: 'Estimated',
-    totalPrVotes: 'Total PR Votes',
-    projected: 'Projected'
+    totalPrVotes: 'Total PR Votes'
   },
   ne: {
     title: 'निर्वाचन २०२६',
@@ -128,8 +127,7 @@ const translations = {
     target: 'लक्ष्य',
     total: 'कुल',
     estimated: 'अनुमानित',
-    totalPrVotes: 'कुल समानुपातिक मत',
-    projected: 'अनुमानित'
+    totalPrVotes: 'कुल समानुपातिक मत'
   }
 };
 
@@ -523,7 +521,7 @@ export default function App() {
 
   // Party Totals for Sidebar
   const partyTotals = useMemo(() => {
-    const totals: Record<string, { count: number; won: number; color: string; icon: string; samanupathik: number; prSeats: number; projectedPrSeats: number }> = {};
+    const totals: Record<string, { count: number; won: number; color: string; icon: string; samanupathik: number; prSeats: number }> = {};
     
     // Process Samanupathik Data first
     samanupathikData.forEach(item => {
@@ -539,7 +537,7 @@ export default function App() {
       const votes = parseVotes(item.Pr_votes || item.Pr_Votes || item.votes || item.samanupathik || item.Votes || item.Samanupathik || item['Samanupathik Votes']);
       
       if (!totals[party]) {
-        totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: votes, prSeats: 0, projectedPrSeats: 0 };
+        totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: votes, prSeats: 0 };
       } else {
         totals[party].samanupathik += votes;
       }
@@ -563,8 +561,7 @@ export default function App() {
             color: c.partyColor || '#cbd5e1',
             icon: c.partyIcon || '',
             samanupathik: 0,
-            prSeats: 0,
-            projectedPrSeats: 0
+            prSeats: 0
           };
         } else {
           totals[party].count += leading;
@@ -578,7 +575,7 @@ export default function App() {
       processedPartyData.forEach(res => {
         const party = res.leader?.partyName || 'Unknown';
         if (!totals[party]) {
-          totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: 0, prSeats: 0, projectedPrSeats: 0 };
+          totals[party] = { count: 0, won: 0, color: '#cbd5e1', icon: '', samanupathik: 0, prSeats: 0 };
         }
         
         const status = (res.leader?.status || '').toLowerCase();
@@ -590,16 +587,16 @@ export default function App() {
       });
     }
 
-    // PR Seat Allocation Logic
-    const TOTAL_CAST_VOTES = 10505653;
-    const THRESHOLD = 3/100 *(TOTAL_CAST_VOTES); // Exactly as specified by user
+    // PR Seat Allocation Logic (Final)
+    const TOTAL_CAST_VOTES = 10514258;
+    const THRESHOLD = 315428; // 3% of 10,514,258
     const TOTAL_PR_SEATS = 110;
-    const QUOTA_PER_SEAT = TOTAL_CAST_VOTES / TOTAL_PR_SEATS; // ~103,111.027
 
     const eligibleParties = Object.entries(totals).filter(([_, data]) => data.samanupathik >= THRESHOLD);
+    const totalEligibleVotes = eligibleParties.reduce((sum, [_, data]) => sum + data.samanupathik, 0);
 
-    if (eligibleParties.length > 0) {
-      // 1. Actual Seats (based on current counted votes vs total expected quota)
+    if (eligibleParties.length > 0 && totalEligibleVotes > 0) {
+      const QUOTA_PER_SEAT = totalEligibleVotes / TOTAL_PR_SEATS;
       let allocatedSeats = 0;
       const partyRemainders: { party: string, remainder: number }[] = [];
 
@@ -612,40 +609,12 @@ export default function App() {
       });
 
       // Distribute remaining seats using largest remainder method among eligible parties
-      // Note: This only applies if we've reached the total cast votes. 
-      // If votes are still being counted, allocatedSeats will be < 110.
-      if (allocatedSeats < TOTAL_PR_SEATS && totalPrVotes >= TOTAL_CAST_VOTES) {
-        partyRemainders.sort((a, b) => b.remainder - a.remainder);
-        let i = 0;
-        while (allocatedSeats < TOTAL_PR_SEATS && i < partyRemainders.length) {
-          totals[partyRemainders[i].party].prSeats += 1;
-          allocatedSeats += 1;
-          i++;
-        }
-      }
-
-      // 2. Projected Seats (divide 110 seats among eligible parties based on current vote share of eligible pool)
-      const totalEligibleVotes = eligibleParties.reduce((sum, [_, data]) => sum + data.samanupathik, 0);
-      if (totalEligibleVotes > 0) {
-        let projectedAllocated = 0;
-        const projectedRemainders: { party: string, remainder: number }[] = [];
-
-        eligibleParties.forEach(([party, data]) => {
-          const rawProjected = (data.samanupathik / totalEligibleVotes) * TOTAL_PR_SEATS;
-          const seats = Math.floor(rawProjected);
-          totals[party].projectedPrSeats = seats;
-          projectedAllocated += seats;
-          projectedRemainders.push({ party, remainder: rawProjected - seats });
-        });
-
-        // Distribute remaining seats to reach exactly 110
-        projectedRemainders.sort((a, b) => b.remainder - a.remainder);
-        let j = 0;
-        while (projectedAllocated < TOTAL_PR_SEATS && j < projectedRemainders.length) {
-          totals[projectedRemainders[j].party].projectedPrSeats += 1;
-          projectedAllocated += 1;
-          j++;
-        }
+      partyRemainders.sort((a, b) => b.remainder - a.remainder);
+      let i = 0;
+      while (allocatedSeats < TOTAL_PR_SEATS && i < partyRemainders.length) {
+        totals[partyRemainders[i].party].prSeats += 1;
+        allocatedSeats += 1;
+        i++;
       }
     }
     
@@ -732,7 +701,7 @@ export default function App() {
     }
     
     // If all are won, show first 9
-    return processedBattlesData.slice(0, 6);
+    return processedBattlesData.slice(0, 9);
   }, [processedBattlesData, filteredResults, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
 
   const searchSummary = useMemo(() => {
@@ -906,14 +875,8 @@ export default function App() {
                           <div className="bg-[#FFEDD5]/10 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-bold text-slate-900">{data.won > 0 ? formatNumber(data.won) : '-'}</span>
                           </div>
-                          <div className="bg-red-50/30 flex flex-col items-center justify-center border-l border-slate-100 py-1">
+                          <div className="bg-red-50/30 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-black text-red-600">{data.prSeats > 0 ? formatNumber(data.prSeats) : '-'}</span>
-                            {data.projectedPrSeats > 0 && (
-                              <div className="flex flex-col items-center mt-0.5">
-                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter leading-none">{t.projected}</span>
-                                <span className="text-[10px] font-bold text-red-400 leading-none">{formatNumber(data.projectedPrSeats)}</span>
-                              </div>
-                            )}
                           </div>
                           <div className="flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
