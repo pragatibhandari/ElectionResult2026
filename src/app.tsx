@@ -732,7 +732,7 @@ export default function App() {
     }
     
     // If all are won, show first 9
-    return processedBattlesData.slice(0, 9);
+    return processedBattlesData.slice(0, 6);
   }, [processedBattlesData, filteredResults, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
 
   const searchSummary = useMemo(() => {
