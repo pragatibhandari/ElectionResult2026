@@ -591,8 +591,8 @@ export default function App() {
     }
 
     // PR Seat Allocation Logic
-    const TOTAL_CAST_VOTES = 11342213;
-    const THRESHOLD = 340267; // Exactly as specified by user
+    const TOTAL_CAST_VOTES = 10505653;
+    const THRESHOLD = 3/100 *(TOTAL_CAST_VOTES); // Exactly as specified by user
     const TOTAL_PR_SEATS = 110;
     const QUOTA_PER_SEAT = TOTAL_CAST_VOTES / TOTAL_PR_SEATS; // ~103,111.027
 
