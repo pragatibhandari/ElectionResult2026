@@ -69,7 +69,8 @@ const translations = {
     target: 'Target',
     total: 'Total',
     estimated: 'Estimated',
-    totalPrVotes: 'Total PR Votes'
+    totalPrVotes: 'Total PR Votes',
+    totalVotesInSheet: 'Total Votes (K16)'
   },
   ne: {
     title: 'निर्वाचन २०२६',
@@ -127,7 +128,8 @@ const translations = {
     target: 'लक्ष्य',
     total: 'कुल',
     estimated: 'अनुमानित',
-    totalPrVotes: 'कुल समानुपातिक मत'
+    totalPrVotes: 'कुल समानुपातिक मत',
+    totalVotesInSheet: 'कुल मत (K16)'
   }
 };
 
@@ -273,6 +275,7 @@ const ParliamentChart = ({
 };
 
 export default function App() {
+  const [totalCastVotes, setTotalCastVotes] = useState<number>(10514258);
   const [language, setLanguage] = useState<Language>('en');
   const [searchTerm, setSearchTerm] = useState('');
   const [battlesData, setBattlesData] = useState<Candidate[]>([]);
@@ -330,16 +333,17 @@ export default function App() {
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             
-            if (!sheet) return [] as any[];
+            if (!sheet) return { data: [] as any[], sheet: null };
             
             const rawData = XLSX.utils.sheet_to_json(sheet);
-            return rawData.map((row: any) => {
+            const data = rawData.map((row: any) => {
               const trimmedRow: any = {};
               Object.keys(row).forEach(key => {
                 trimmedRow[key.trim()] = row[key];
               });
               return trimmedRow;
             });
+            return { data, sheet };
           } catch (err) {
             if (i === retries) {
               console.error(`Final fetch error for sheet ${sheetId}:`, err);
@@ -349,7 +353,7 @@ export default function App() {
             await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
           }
         }
-        return [] as any[];
+        return { data: [] as any[], sheet: null };
       };
 
       // Fetch unique IDs to reduce network load and potential rate limiting
@@ -358,9 +362,22 @@ export default function App() {
       
       const getResult = (id: string) => sheetResults[uniqueIds.indexOf(id)];
       
-      const pDataRaw = getResult(PARTY_SHEET_ID);
-      const bDataRaw = getResult(BATTLES_SHEET_ID);
-      const sDataRaw = getResult(SAMANUPATHIK_SHEET_ID);
+      const pResult = getResult(PARTY_SHEET_ID);
+      const bResult = getResult(BATTLES_SHEET_ID);
+      const sResult = getResult(SAMANUPATHIK_SHEET_ID);
+
+      const pDataRaw = pResult.data;
+      const bDataRaw = bResult.data;
+      const sDataRaw = sResult.data;
+
+      // Extract total cast votes from K16 of the Samanupathik sheet
+      if (sResult.sheet && sResult.sheet['K16']) {
+        const k16Value = sResult.sheet['K16'].v;
+        const parsedTotal = typeof k16Value === 'number' ? k16Value : parseInt(String(k16Value).replace(/,/g, ''));
+        if (!isNaN(parsedTotal) && parsedTotal > 0) {
+          setTotalCastVotes(parsedTotal);
+        }
+      }
 
       const mapCandidate = (item: any) => {
         const isWin = String(item.win || '').toLowerCase() === 'yes';
@@ -588,8 +605,8 @@ export default function App() {
     }
 
     // PR Seat Allocation Logic (Final)
-    const TOTAL_CAST_VOTES = 10534451;
-    const THRESHOLD = (3/100) * (10534451); // 3% of 10,514,258
+    const TOTAL_CAST_VOTES = totalCastVotes;
+    const THRESHOLD = Math.floor(TOTAL_CAST_VOTES * 0.03); // 3% of dynamic total votes
     const TOTAL_PR_SEATS = 110;
 
     const eligibleParties = Object.entries(totals).filter(([_, data]) => data.samanupathik >= THRESHOLD);
@@ -625,7 +642,7 @@ export default function App() {
       if (b[1].won !== a[1].won) return b[1].won - a[1].won;
       return b[1].samanupathik - a[1].samanupathik;
     });
-  }, [processedPartyData, partyData, samanupathikData]);
+  }, [processedPartyData, partyData, samanupathikData, totalCastVotes]);
 
   const hasAnyWinners = useMemo(() => processedBattlesData.some(res => res.leader.status?.toLowerCase() === 'won'), [processedBattlesData]);
 
@@ -789,7 +806,7 @@ export default function App() {
               <div className="bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex flex-col items-end">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t.totalPrVotes}</p>
                 <p className="text-sm font-black text-slate-900 leading-none">
-                  {formatNumber(totalPrVotes)}
+                  {formatNumber(totalCastVotes)}
                 </p>
               </div>
             </div>
@@ -880,11 +897,11 @@ export default function App() {
                           </div>
                           <div className="flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
-                            {data.samanupathik > 0 && totalPrVotes > 0 && (
+                            {data.samanupathik > 0 && totalCastVotes > 0 && (
                               <span className="text-[8px] font-medium text-slate-400">
                                 {language === 'ne' 
-                                  ? toNepaliNumerals(((data.samanupathik / totalPrVotes) * 100).toFixed(1) as any) + '%'
-                                  : ((data.samanupathik / totalPrVotes) * 100).toFixed(1) + '%'
+                                  ? toNepaliNumerals(((data.samanupathik / totalCastVotes) * 100).toFixed(1) as any) + '%'
+                                  : ((data.samanupathik / totalCastVotes) * 100).toFixed(1) + '%'
                                 }
                               </span>
                             )}
