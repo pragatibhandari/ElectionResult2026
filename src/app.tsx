@@ -588,8 +588,8 @@ export default function App() {
     }
 
     // PR Seat Allocation Logic (Final)
-    const TOTAL_CAST_VOTES = 10514258;
-    const THRESHOLD = 315428; // 3% of 10,514,258
+    const TOTAL_CAST_VOTES = 10534451;
+    const THRESHOLD = (3/100) * (10534451); // 3% of 10,514,258
     const TOTAL_PR_SEATS = 110;
 
     const eligibleParties = Object.entries(totals).filter(([_, data]) => data.samanupathik >= THRESHOLD);
