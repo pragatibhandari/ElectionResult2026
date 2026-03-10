@@ -70,7 +70,8 @@ const translations = {
     total: 'Total',
     estimated: 'Estimated',
     totalPrVotes: 'Total PR Votes',
-    totalVotesInSheet: 'Total Votes (K16)'
+    totalVotesInSheet: 'Total Votes (K16)',
+    prSeatShare: 'PR Seat Share'
   },
   ne: {
     title: 'निर्वाचन २०२६',
@@ -129,7 +130,8 @@ const translations = {
     total: 'कुल',
     estimated: 'अनुमानित',
     totalPrVotes: 'कुल समानुपातिक मत',
-    totalVotesInSheet: 'कुल मत (K16)'
+    totalVotesInSheet: 'कुल मत (K16)',
+    prSeatShare: 'समानुपातिक सिट हिस्सा'
   }
 };
 
@@ -714,11 +716,11 @@ export default function App() {
     // Default view: Show top 9 ongoing battles (where win is not declared)
     const ongoingBattles = processedBattlesData.filter(res => res.leader.status?.toLowerCase() !== 'won');
     if (ongoingBattles.length > 0) {
-      return ongoingBattles.slice(0, 9);
+      return ongoingBattles.slice(0, 6);
     }
     
     // If all are won, show first 9
-    return processedBattlesData.slice(0, 9);
+    return processedBattlesData.slice(0, 6);
   }, [processedBattlesData, filteredResults, searchTerm, selectedProvince, selectedDistrict, selectedConstituencyFilter]);
 
   const searchSummary = useMemo(() => {
@@ -892,8 +894,16 @@ export default function App() {
                           <div className="bg-[#FFEDD5]/10 flex items-center justify-center border-l border-slate-100">
                             <span className="text-sm font-bold text-slate-900">{data.won > 0 ? formatNumber(data.won) : '-'}</span>
                           </div>
-                          <div className="bg-red-50/30 flex items-center justify-center border-l border-slate-100">
+                          <div className="bg-red-50/30 flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-sm font-black text-red-600">{data.prSeats > 0 ? formatNumber(data.prSeats) : '-'}</span>
+                            {data.prSeats > 0 && (
+                              <span className="text-[8px] font-medium text-red-400">
+                                {language === 'ne' 
+                                  ? toNepaliNumerals(((data.prSeats / 110) * 100).toFixed(1) as any) + '%'
+                                  : ((data.prSeats / 110) * 100).toFixed(1) + '%'
+                                }
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-col items-center justify-center border-l border-slate-100 py-1">
                             <span className="text-[10px] font-bold text-slate-500">{data.samanupathik > 0 ? formatNumber(data.samanupathik) : '0'}</span>
@@ -1534,7 +1544,7 @@ export default function App() {
 
               <div className="flex-1 overflow-y-auto">
                 <div className="p-8 space-y-8">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="bg-[#FEF9C3] rounded-2xl p-4 border border-yellow-100">
                       <p className="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">{t.leading}</p>
                       <p className="text-2xl font-black text-yellow-800">{formatNumber(selectedParty.count)}</p>
@@ -1543,13 +1553,23 @@ export default function App() {
                       <p className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-1">{t.won}</p>
                       <p className="text-2xl font-black text-orange-800">{formatNumber(selectedParty.won)}</p>
                     </div>
+                    <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
+                      <p className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">{language === 'ne' ? 'समानुपातिक सिट' : 'PR Seats'}</p>
+                      <p className="text-2xl font-black text-red-800">{formatNumber(selectedParty.prSeats)}</p>
+                      <p className="text-[10px] font-bold text-red-400 mt-1">
+                        {((selectedParty.prSeats / 110) * 100).toFixed(1)}% {language === 'ne' ? 'हिस्सा' : 'Share'}
+                      </p>
+                    </div>
                     <div className="bg-[#E0F2FE] rounded-2xl p-4 border border-blue-100">
                       <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1">{t.totalSeats}</p>
-                      <p className="text-2xl font-black text-blue-800">{formatNumber(selectedParty.won + selectedParty.count)}</p>
+                      <p className="text-2xl font-black text-blue-800">{formatNumber(selectedParty.won + selectedParty.count + selectedParty.prSeats)}</p>
                     </div>
-                    <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
-                      <p className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">{t.proportionalVotes}</p>
-                      <p className="text-2xl font-black text-red-800">{formatNumber(selectedParty.samanupathik)}</p>
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.proportionalVotes}</p>
+                      <p className="text-2xl font-black text-slate-700">{formatNumber(selectedParty.samanupathik)}</p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-1">
+                        {((selectedParty.samanupathik / totalCastVotes) * 100).toFixed(1)}% {language === 'ne' ? 'हिस्सा' : 'Share'}
+                      </p>
                     </div>
                   </div>
 
